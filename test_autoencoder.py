@@ -5,6 +5,8 @@ import torch
 
 import models.nn.autoencoder as ae
 
+plt.rcParams.update({"font.size": 14})
+
 
 def load_dataframe(
         currency: str,
@@ -66,7 +68,7 @@ def setup_dataset(
 if __name__ == "__main__":
 
     # ...
-    torch.manual_seed(3)
+    torch.manual_seed(1)
 
     # Choose number of factors.
     n_factors = 2
@@ -90,10 +92,10 @@ if __name__ == "__main__":
     activation_type = "ReLu"
 
     # Model name.
-    model_name = "ae_1_new.pt"
+    model_name = f"ae_f{n_factors}.pt"
 
     # Train model.
-    if True:
+    if False:
 
         # Number of training epochs.
         n_epochs = 25001
@@ -154,7 +156,92 @@ if __name__ == "__main__":
                          color=c, linestyle="-", marker="o", label=idx)
                 plt.plot(tenors, data_tmp,
                          color=c, linestyle="--", marker="x")
-        plt.xlabel("Time")
-        plt.ylabel("Rate")
+        plt.xlabel("Maturity [year]")
+        plt.ylabel("Yield [%]")
         plt.legend()
+        plt.show()
+
+    # Latent space plot.
+    if False:
+
+        # Load model.
+        model = ae.load_ae_symmetric(
+                n_features,
+                encoding_dim,
+                n_hidden,
+                n_nodes,
+                node_type,
+                activation_type,
+                model_name)
+
+        for cur in currencies:
+            data = load_dataframe(cur, tenors)
+
+            if False:
+                data = data.iloc[::20, :]
+
+            data = torch.from_numpy(data.values)
+            data = data.to(torch.float32)
+            latent_rep = model.encoding(data).detach().numpy()
+            plt.plot(latent_rep[:, 0], latent_rep[:, 1],
+                     "o", markersize=3.0, label=cur)
+        plt.xlabel("x-factor")
+        plt.ylabel("y-factor")
+        plt.title("Yield curves in latent space")
+        plt.legend()
+        plt.show()
+
+    # Show continuity of time series in latent space.
+    if False:
+
+        # Load model.
+        model = ae.load_ae_symmetric(
+                n_features,
+                encoding_dim,
+                n_hidden,
+                n_nodes,
+                node_type,
+                activation_type,
+                model_name)
+
+        for cur in currencies:
+            data = load_dataframe(cur, tenors)
+
+            if True:
+                data = data.iloc[::20, :]
+
+            data = torch.from_numpy(data.values)
+            data = data.to(torch.float32)
+            latent_rep = model.encoding(data).detach().numpy()
+            plt.plot(latent_rep[:, 0], latent_rep[:, 1],
+                     "-", marker="o", markersize=3.0)
+        plt.xlabel("x-factor")
+        plt.ylabel("y-factor")
+        plt.title(f"{cur} yield curves in latent space")
+        plt.legend()
+        plt.show()
+
+    if True:
+
+        # Load model.
+        model = ae.load_ae_symmetric(
+                n_features,
+                encoding_dim,
+                n_hidden,
+                n_nodes,
+                node_type,
+                activation_type,
+                model_name)
+
+        for x in range(20, 41, 1):
+
+            data = torch.from_numpy(np.array([10, 0.5 * x - 7.5]))
+            data = data.to(torch.float32)
+            curve = model.decoding(data).detach().numpy()
+
+            plt.plot(tenors, curve)
+            print(curve)
+
+        plt.xlabel("Maturity [year]")
+        plt.ylabel("Yield [%]")
         plt.show()
