@@ -6,10 +6,39 @@ import torch
 import models.nn.autoencoder as ae
 
 
+def load_dataframe(
+        currency: str,
+        tenors: tuple) -> pd.DataFrame:
+    """Load curve data for currency into DataFrame.
+
+    Parameters
+    ----------
+    currency: Currency to include in dataset.
+    tenors: Tenors to include in dataset.
+
+    Returns
+    -------
+    Dataset
+    """
+    # Relevant column names.
+    column_names = list()
+    for year in tenors:
+        column_names.append(f" {year}Y Par Swap Rate")
+    if currency == "DKK":
+        data = pd.read_excel(f"data/{currency} swaps.xlsx", index_col=0)
+    else:
+        data = pd.read_excel(f"data/{currency} swaps.xls", index_col=0)
+    # Get relevant columns.
+    mask = []
+    for name in column_names:
+        mask.append(currency + name)
+    return data[mask]
+
+
 def setup_dataset(
         currencies: tuple,
         tenors: tuple) -> torch.Tensor:
-    """...
+    """Setup dataset...
 
     Parameters
     ----------
@@ -20,21 +49,9 @@ def setup_dataset(
     -------
     Dataset.
     """
-    # Relevant column names.
-    column_names = list()
-    for year in tenors:
-        column_names.append(f" {year}Y Par Swap Rate")
     data = None
     for cur in currencies:
-        if cur == "DKK":
-            data_tmp = pd.read_excel(f"data/{cur} swaps.xlsx", index_col=0)
-        else:
-            data_tmp = pd.read_excel(f"data/{cur} swaps.xls", index_col=0)
-        # Get relevant columns.
-        mask = []
-        for name in column_names:
-            mask.append(cur + name)
-        data_tmp = data_tmp[mask]
+        data_tmp = load_dataframe(cur, tenors)
         if data is None:
             data = data_tmp.values
         else:
@@ -48,6 +65,9 @@ def setup_dataset(
 
 if __name__ == "__main__":
 
+    # ...
+    torch.manual_seed(3)
+
     # Choose number of factors.
     n_factors = 2
 
@@ -59,6 +79,7 @@ if __name__ == "__main__":
 
     # Dataset.
     data = setup_dataset(currencies, tenors)
+    print(data.shape)
 
     # Model parameters.
     n_features = len(tenors)
@@ -69,7 +90,7 @@ if __name__ == "__main__":
     activation_type = "ReLu"
 
     # Model name.
-    model_name = "ae_1.pt"
+    model_name = "ae_1_new.pt"
 
     # Train model.
     if True:
@@ -101,7 +122,7 @@ if __name__ == "__main__":
                     model_name)
 
     # Plot reconstructed rate curves.
-    if True:
+    if False:
 
         # Load model.
         model = ae.load_ae_symmetric(
@@ -119,17 +140,17 @@ if __name__ == "__main__":
 
         color = iter(plt.cm.gist_rainbow(np.linspace(0, 1, n_curves)))
 
-        data = pd.read_excel(f"data/DKK swaps.xlsx", index_col=0)
+        data = load_dataframe("DKK", tenors)
 
         for n, idx in enumerate(data.index):
             if idx in curve_ids:
 
-                data_tmp = torch.from_numpy(data.iloc[idx].values)
+                data_tmp = torch.from_numpy(data.iloc[n].values)
                 data_tmp = data_tmp.to(torch.float32)
                 data_tmp = model.forward(data_tmp).detach().numpy()
 
                 c = next(color)
-                plt.plot(tenors, data[n, :],
+                plt.plot(tenors, data.values[n, :],
                          color=c, linestyle="-", marker="o", label=idx)
                 plt.plot(tenors, data_tmp,
                          color=c, linestyle="--", marker="x")

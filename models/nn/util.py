@@ -3,9 +3,7 @@ from collections import OrderedDict
 import torch
 
 
-def construct_nn(
-        configuration: list,
-        description: str = "") -> torch.nn.Sequential:
+def construct_nn(configuration: list) -> torch.nn.Sequential:
     """Construct neural network based on configuration.
 
     Parameters
@@ -20,7 +18,6 @@ def construct_nn(
             - ReLu: Rectified linear unit function
             - Softplus: Smooth approximation of ReLU
             - Softsign:
-    description: String describing the neural network.
 
     Returns
     -------
@@ -33,14 +30,14 @@ def construct_nn(
               node_type,
               activation_type) in enumerate(configuration):
         # Add layer.
-        key = f"{description}: layer {idx + idx_start}"
+        key = f"layer {idx + idx_start}"
         if node_type == "Linear":
             layers[key] = torch.nn.Linear(n_nodes_in, n_nodes_out)
         else:
             raise ValueError("Node type is unknown.")
         # Apply activation function.
         if activation_type is not None:
-            key = f"{description}: activation {idx + idx_start}"
+            key = f"activation {idx + idx_start}"
             if activation_type == "ELU":
                 layers[key] = torch.nn.ELU()
             elif activation_type == "ReLu":

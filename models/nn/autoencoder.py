@@ -5,8 +5,16 @@ import models.nn.util as util
 
 
 class AE(torch.nn.Module):
-    """Autoencoder neural network model."""
+    """Autoencoder neural network model.
 
+    A configuration is a list of tuples -- each tuple defines the
+        configuration of a layer in the neural network.
+
+    Parameters
+    ----------
+        config_encoder: Configuration of encoder.
+        config_decoder: Configuration of decoder.
+    """
     def __init__(
             self,
             config_encoder,
@@ -22,10 +30,8 @@ class AE(torch.nn.Module):
         self.initialization()
 
     def initialization(self):
-        self.encoder = (
-            util.construct_nn(self.config_encoder, description="encoder"))
-        self.decoder = (
-            util.construct_nn(self.config_decoder, description="decoder"))
+        self.encoder = util.construct_nn(self.config_encoder)
+        self.decoder = util.construct_nn(self.config_decoder)
 
     def forward(self, x):
         encoded = self.encoding(x)
@@ -50,12 +56,12 @@ class VAE(AE):
 
 
 def setup_ae_symmetric(
-        n_features: int = 8,
-        encoding_dim: int = 2,
-        n_hidden: int = 1,
-        n_nodes: int = 8,
-        node_type: str = "Linear",
-        activation_type: str = "ReLu"):
+        n_features: int,
+        encoding_dim: int,
+        n_hidden: int,
+        n_nodes: int,
+        node_type: str,
+        activation_type: str):
     """Setup of symmetric autoencoder model.
 
     Parameters
@@ -146,10 +152,6 @@ def train_ae(
     data: Dataset.
     model_name: Name of saved model (remember .pt extension).
     """
-
-    # TODO: Why?
-    torch.manual_seed(0)
-
     for epoch in range(n_epochs):
         # Model output.
         recon = model(data)
