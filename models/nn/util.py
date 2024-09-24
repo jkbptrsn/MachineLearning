@@ -12,7 +12,7 @@ def construct_nn(
     ----------
     configuration: List of tuples -- each tuple defines the
         configuration of a layer in the neural network.
-        * Type of layer:
+        * Type of node:
             - Linear: Affine linear transformation.
         * Type of activation function:
             - ELU: Exponential linear unit function

@@ -3,97 +3,137 @@ import numpy as np
 import pandas as pd
 import torch
 
-import models.nn.autoencoder as autoencoder
+import models.nn.autoencoder as ae
 
 
-# TODO: Why?
-torch.manual_seed(0)
+def setup_dataset(
+        currencies: tuple,
+        tenors: tuple) -> torch.Tensor:
+    """...
 
-n_factors = 2
+    Parameters
+    ----------
+    currencies: Currencies to include in dataset.
+    tenors: Tenors to include in dataset.
 
-config_encoder_ = [(8, 8, "Linear", "ReLu"),
-                   (8, n_factors, "Linear", "ReLu")]
+    Returns
+    -------
+    Dataset.
+    """
+    # Relevant column names.
+    column_names = list()
+    for year in tenors:
+        column_names.append(f" {year}Y Par Swap Rate")
+    data = None
+    for cur in currencies:
+        if cur == "DKK":
+            data_tmp = pd.read_excel(f"data/{cur} swaps.xlsx", index_col=0)
+        else:
+            data_tmp = pd.read_excel(f"data/{cur} swaps.xls", index_col=0)
+        # Get relevant columns.
+        mask = []
+        for name in column_names:
+            mask.append(cur + name)
+        data_tmp = data_tmp[mask]
+        if data is None:
+            data = data_tmp.values
+        else:
+            data = np.vstack([data, data_tmp.values])
+    # Convert to torch.Tensor.
+    data = torch.from_numpy(data)
+    # TODO: Double type?
+    data = data.to(torch.float32)
+    return data
 
-config_decoder_ = [(n_factors, 8, "Linear", "ReLu"),
-                   (8, 8, "Linear", None)]
 
-model = autoencoder.AE(config_encoder_, config_decoder_)
+if __name__ == "__main__":
 
-criterion = torch.nn.MSELoss()
+    # Choose number of factors.
+    n_factors = 2
 
-# TODO: Different learning rate? Different weight decay?
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
+    # Choose currencies.
+    currencies = ("DKK", "EUR", "GBP", "JPY", "USD")
 
-data_total = None
+    # Choose tenors.
+    tenors = (1, 2, 3, 5, 10, 15, 20, 30)
 
-currencies = ("DKK", "EUR", "GBP", "JPY", "USD")
+    # Dataset.
+    data = setup_dataset(currencies, tenors)
 
-rate_years = (1, 2, 3, 5, 10, 15, 20, 30)
+    # Model parameters.
+    n_features = len(tenors)
+    encoding_dim = n_factors
+    n_hidden = 1
+    n_nodes = 8
+    node_type = "Linear"
+    activation_type = "ReLu"
 
-column_names = list()
-for year in rate_years:
-    column_names.append(f" {year}Y Par Swap Rate")
+    # Model name.
+    model_name = "ae_1.pt"
 
-for cur in currencies:
+    # Train model.
+    if True:
 
-    if cur == "DKK":
-        data = pd.read_excel(f"data/{cur} swaps.xlsx", index_col=0)
-    else:
-        data = pd.read_excel(f"data/{cur} swaps.xls", index_col=0)
+        # Number of training epochs.
+        n_epochs = 25001
 
-    col_names = []
-    for n in column_names:
-        col_names.append(cur + n)
+        # Setup model.
+        model = ae.setup_ae_symmetric(
+            n_features,
+            encoding_dim,
+            n_hidden,
+            n_nodes,
+            node_type,
+            activation_type)
 
-    data = data[col_names]
+        # Loss function.
+        loss_function = torch.nn.MSELoss()
 
-    if data_total is None:
-        data_total = data.values
-    else:
-        data_total = np.vstack([data_total, data.values])
+        # Numerical optimizer.
+        # TODO: Different learning rate? Different weight decay?
+        optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
 
-print(data_total.shape)
+        ae.train_ae(model,
+                    loss_function,
+                    optimizer,
+                    n_epochs,
+                    data,
+                    model_name)
 
-data_total = torch.from_numpy(data_total)
-# TODO: Double type?
-data_total = data_total.to(torch.float32)
+    # Plot reconstructed rate curves.
+    if True:
 
-num_epochs = 25001
+        # Load model.
+        model = ae.load_ae_symmetric(
+                n_features,
+                encoding_dim,
+                n_hidden,
+                n_nodes,
+                node_type,
+                activation_type,
+                model_name)
 
-output = None
+        curve_ids = ("01/29/2010", "07/31/2017", "08/30/2019", "02/28/2023", "12/29/2023")
 
-for epoch in range(num_epochs):
-    recon = model(data_total)
-    loss = criterion(recon, data_total)
+        n_curves = len(curve_ids)
 
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+        color = iter(plt.cm.gist_rainbow(np.linspace(0, 1, n_curves)))
 
-    if epoch % 200 == 0:
-        print(f"Epoch: {epoch + 1}, Loss: {loss.item():.4f}")
-    if epoch == num_epochs - 1:
-        output = (epoch, recon.detach().numpy())
+        data = pd.read_excel(f"data/DKK swaps.xlsx", index_col=0)
 
-curve_ids = ("01/29/2010", "07/31/2017", "08/30/2019", "02/28/2023", "12/29/2023")
+        for n, idx in enumerate(data.index):
+            if idx in curve_ids:
 
-n_curves = len(curve_ids)
+                data_tmp = torch.from_numpy(data.iloc[idx].values)
+                data_tmp = data_tmp.to(torch.float32)
+                data_tmp = model.forward(data_tmp).detach().numpy()
 
-color = iter(plt.cm.gist_rainbow(np.linspace(0, 1, n_curves)))
-
-if currencies[0] == "DKK":
-    data_pd = pd.read_excel(f"data/{currencies[0]} swaps.xlsx", index_col=0)
-else:
-    data_pd = pd.read_excel(f"data/{currencies[0]} swaps.xls", index_col=0)
-
-for n, idx in enumerate(data_pd.index):
-    if idx in curve_ids:
-        c = next(color)
-        plt.plot(rate_years, data_total[n, :],
-                 color=c, linestyle="-", marker="o", label=idx)
-        plt.plot(rate_years, output[1][n, :],
-                 color=c, linestyle="--", marker="x")
-plt.xlabel("Time")
-plt.ylabel("Rate")
-plt.legend()
-plt.show()
+                c = next(color)
+                plt.plot(tenors, data[n, :],
+                         color=c, linestyle="-", marker="o", label=idx)
+                plt.plot(tenors, data_tmp,
+                         color=c, linestyle="--", marker="x")
+        plt.xlabel("Time")
+        plt.ylabel("Rate")
+        plt.legend()
+        plt.show()
