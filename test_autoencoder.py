@@ -215,11 +215,10 @@ if __name__ == "__main__":
             latent_rep = model.encoding(data).detach().numpy()
             plt.plot(latent_rep[:, 0], latent_rep[:, 1],
                      "-", marker="o", markersize=3.0)
-        plt.xlabel("x-factor")
-        plt.ylabel("y-factor")
-        plt.title(f"{cur} yield curves in latent space")
-        plt.legend()
-        plt.show()
+            plt.xlabel("x-factor")
+            plt.ylabel("y-factor")
+            plt.title(f"{cur} yield curves in latent space")
+            plt.show()
 
     if True:
 
