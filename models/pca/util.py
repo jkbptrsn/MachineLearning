@@ -79,3 +79,11 @@ class PCA:
         y = self.encoding(x)
         y = self.dimension_reduction(y, n_factors)
         return self.decoding(y)
+
+    def principal_component(self, n: int) -> np.ndarray:
+        """Get n'th principal component."""
+        return self.eigen_vectors[:, n]
+
+    def relative_variance(self, n: int) -> float:
+        """Get n'th relative variance."""
+        return self.eigen_values[n] / np.sum(self.eigen_values)
