@@ -10,13 +10,17 @@ plt.rcParams.update({"font.size": 14})
 
 def load_dataframe(
         currency: str,
-        tenors: tuple) -> pd.DataFrame:
+        tenors: tuple,
+        frequency: str = "daily",
+        type_: str = "") -> pd.DataFrame:
     """Load curve data for currency into DataFrame.
 
     Parameters
     ----------
     currency: Currency to include in dataset.
     tenors: Tenors to include in dataset.
+    frequency: Frequency of observations.
+    type_: Level or change.
 
     Returns
     -------
@@ -26,10 +30,7 @@ def load_dataframe(
     column_names = list()
     for year in tenors:
         column_names.append(f" {year}Y Par Swap Rate")
-    if currency == "DKK":
-        data = pd.read_excel(f"data/{currency} swaps.xlsx", index_col=0)
-    else:
-        data = pd.read_excel(f"data/{currency} swaps.xls", index_col=0)
+    data = pd.read_excel(f"data/{frequency}/{currency}_{frequency}{type_}.xlsx", index_col=0)
     # Get relevant columns.
     mask = []
     for name in column_names:

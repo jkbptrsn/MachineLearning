@@ -82,7 +82,7 @@ class PCA:
 
     def principal_component(self, n: int) -> np.ndarray:
         """Get n'th principal component."""
-        return self.eigen_vectors[:, n]
+        return self.eigen_vectors[:, n].reshape((-1, 1)) + self.mean
 
     def relative_variance(self, n: int) -> float:
         """Get n'th relative variance."""
