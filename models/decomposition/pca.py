@@ -2,11 +2,11 @@ import numpy as np
 
 
 class PCA:
-    """Principal Component Analysis class.
+    """Principal Component Analysis.
 
     Parameters
     ----------
-        data: np.ndarray of size (m x N), where
+        data: np.ndarray of shape (m x N), where
             - m is the number of features
             - N is the number of points in the dataset.
     """
@@ -19,15 +19,15 @@ class PCA:
         self.n_features = self.data.shape[0]
         # Number of points.
         self.n_points = self.data.shape[1]
-        # Mean of sample for each feature: Size (m x 1).
+        # Empirical mean for each feature: Shape (m, 1).
         self.mean = self.data.mean(axis=1).reshape((-1, 1))
 
-        # Covariance matrix: Size (m x m).
+        # Covariance matrix: Shape (m, m).
         self.cov = None
 
-        # Eigen values of covariance matrix: Size (m x 1) TODO?.
+        # Eigen-values of covariance matrix: Shape (m,).
         self.eigen_values = None
-        # Eigen vectors of covariance matrix: Size (m x m).
+        # Eigen-vectors of covariance matrix: Shape (m, m).
         self.eigen_vectors = None
 
     def initialization(self, subtract_mean: bool = True) -> None:
@@ -38,10 +38,10 @@ class PCA:
         """Calculate covariance matrix."""
         if self.cov is None:
             if subtract_mean:
-                data_hat = self.data - self.mean
+                data = self.data - self.mean
             else:
-                data_hat = self.data
-            self.cov = np.matmul(data_hat, data_hat.transpose())
+                data = self.data
+            self.cov = np.matmul(data, data.transpose())
             self.cov /= self.n_points
 
     def diagonalization(self, subtract_mean: bool = True) -> None:
@@ -62,9 +62,6 @@ class PCA:
             n_factors: int) -> np.ndarray:
         """n_factors-dimensional representation of x."""
         x[n_factors:] = 0
-
-        # TODO: Renormalization?
-
         return x
 
     def decoding(self, x: np.ndarray) -> np.ndarray:
@@ -82,7 +79,7 @@ class PCA:
 
     def principal_component(self, n: int) -> np.ndarray:
         """Get n'th principal component."""
-        return self.eigen_vectors[:, n].reshape((-1, 1)) + self.mean
+        return self.eigen_vectors[:, n]
 
     def relative_variance(self, n: int) -> float:
         """Get n'th relative variance."""
