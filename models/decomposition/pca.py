@@ -6,7 +6,7 @@ class PCA:
 
     Parameters
     ----------
-        data: np.ndarray of shape (m x N), where
+        data: np.ndarray of shape (m, N), where
             - m is the number of features
             - N is the number of points in the dataset.
     """
