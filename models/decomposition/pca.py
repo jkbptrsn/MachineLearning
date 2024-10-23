@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 
 class PCA:
@@ -6,13 +7,17 @@ class PCA:
 
     Parameters
     ----------
+        index: pd.Index of shape (m,), where m is the number of
+            features.
         data: np.ndarray of shape (m, N), where
             - m is the number of features
             - N is the number of points in the dataset.
     """
     def __init__(
             self,
+            index: pd.Index,
             data: np.ndarray):
+        self.index = index
         self.data = data
 
         # Number of features.
@@ -72,7 +77,7 @@ class PCA:
             self,
             x: np.ndarray,
             n_factors: int) -> np.ndarray:
-        """Approximately reconstruction of x by n_factors-PCA."""
+        """Approximately reconstruction of x by n_factor-PCA."""
         y = self.encoding(x)
         y = self.dimension_reduction(y, n_factors)
         return self.decoding(y)
