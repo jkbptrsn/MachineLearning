@@ -174,7 +174,9 @@ def setup_ae_symmetric(
         config_decoder_.append(layer)
     # Output layer. TODO: No activation function!
     config_decoder_.append((n_nodes, n_features, node_type, None))
-    return CAE(config_encoder_, config_decoder_)
+    if model_type == "CAE":
+        return CAE(config_encoder_, config_decoder_)
+    return VAE(config_encoder_, config_decoder_)
 
 
 def load_ae_symmetric(
