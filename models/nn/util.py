@@ -49,5 +49,6 @@ def construct_nn(configuration: list) -> torch.nn.Sequential:
             elif activation_type == "Softsign":
                 layers[key] = torch.nn.Softsign()
             else:
-                raise ValueError("Activation type is unknown.")
+                raise ValueError(
+                    f"Activation type {activation_type} is unknown.")
     return torch.nn.Sequential(layers)
